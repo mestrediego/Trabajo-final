@@ -1,0 +1,121 @@
+import json
+
+# ---------- Punto A: Dominio del Catálogo y Reglas de Inventario ----------
+
+#  Excepción el stock inválido
+class StockInvalidoError(Exception):
+    
+    pass
+
+
+#  Clase base 
+class DispositivoEcológico:
+    def __init__(self, nombre, precio, stock):
+        self.nombre = nombre
+        self.precio = precio
+        self.stock = stock  
+
+    @property
+    def stock(self):
+        return self._stock
+
+    
+    @stock.setter
+    def stock(self, valor):
+        if valor < 0:
+            raise StockInvalidoError(
+                f" El stock no puede ser negativo. Intentaste asignar: {valor}"
+            )
+        self._stock = valor
+
+    
+    def emitir_ficha_tecnica(self):
+        return f"Dispositivo: {self.nombre} | Precio: ${self.precio} | Stock: {self.stock}"
+
+    
+    def a_diccionario(self):
+        return {
+            "tipo": "DispositivoEcológico",
+            "nombre": self.nombre,
+            "precio": self.precio,
+            "stock": self.stock
+        }
+
+
+
+class PanelSolar(DispositivoEcológico):
+    def __init__(self, nombre, precio, stock, potencia_w, eficiencia):
+        super().__init__(nombre, precio, stock) # Hereda los atributos del padre
+        self.potencia_w = potencia_w
+        self.eficiencia = eficiencia
+
+    
+    def emitir_ficha_tecnica(self):
+        return (
+            f"--- FICHA TÉCNICA: PANEL SOLAR ---\n"
+            f"Modelo: {self.nombre}\n"
+            f"Precio: ${self.precio}\n"
+            f"Stock disponible: {self.stock} unidades\n"
+            f"Potencia nominal: {self.potencia_w} W\n"
+            f"Eficiencia energética: {self.eficiencia}%\n"
+            f"-----------------------------------"
+        )
+
+   
+    def a_diccionario(self):
+        datos = super().a_diccionario()
+        datos["tipo"] = "PanelSolar"
+        datos["potencia_w"] = self.potencia_w
+        datos["eficiencia"] = self.eficiencia
+        return datos
+
+
+
+# Punto B: Persistencia y Gestión del Catálogo:
+
+
+class GestorInventario:
+    @staticmethod
+    def guardar_catalogo_json(lista_dispositivos, ruta_archivo):
+       
+        datos_serializables = [dispositivo.a_diccionario() for dispositivo in lista_dispositivos]
+        
+        with open(ruta_archivo, 'w', encoding='utf-8') as archivo:
+            
+            json.dump(datos_serializables, archivo, indent=4, ensure_ascii=False)
+            
+        print(f"\n[ÉXITO] Catálogo exportado correctamente al archivo '{ruta_archivo}'.")
+
+
+
+# PRUEBA Y VERIFICACIÓN
+
+if __name__ == "__main__":
+    print("--- INICIANDO PRUEBAS DEL SISTEMA ECOTECH ---")
+
+    
+    print("\n1. Probando la validación de stock negativo...")
+    try:
+        
+        dispositivo_fallido = DispositivoEcológico("Termotanque Solar", 450, -5)
+    except StockInvalidoError as e:
+        print(f"[CAPTURA EXITOSA DE EXCEPCIÓN] -> {e}")
+
+  
+    print("\n2. Creando productos válidos para el inventario...")
+    panel1 = PanelSolar("EcoMZa 400W", 320.0, 15, 400, 21.5)
+    panel2 = PanelSolar("ecoeco 550W", 480.0, 8, 550, 23.0)
+    dispositivo_generico = DispositivoEcológico("Kit de Medición LED", 45.0, 50)
+
+    
+    print("\n--- Fichas Técnicas Generadas ---")
+    print(panel1.emitir_ficha_tecnica())
+    print()
+    print(dispositivo_generico.emitir_ficha_tecnica())
+
+    
+    catalogo = [panel1, panel2, dispositivo_generico]
+    archivo_destino = "catalogo_ecotech.json"
+    
+    print("\n3. Guardando el catálogo en disco...")
+    GestorInventario.guardar_catalogo_json(catalogo, archivo_destino)
